@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"errors"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -30,7 +32,7 @@ func (suite *SchedulerTestSuite) Test_NewScheduler() {
 	// Since the id field is a function, we can call it to get the value and check its correctness.
 	// Assuming generateId() is defined in the same package as NewScheduler.
 	expectedID := generateId()()
-	require.Equal(expectedID, sch.id)
+	require.Equal(expectedID, sch.id())
 
 	// Check that the tasks and pending_tasks slices are initialized and empty
 	require.Nil(sch.tasks)
@@ -94,7 +96,8 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 	require.Len(sch.tasks, 1)
 
 	// Assuming the generateId() function is defined in the same package.
-	expectedID1 := generateId()()
+	id := generateId()
+	expectedID1 := id()
 	require.Equal(expectedID1, sch.tasks[0].id)
 
 	// Add the second task and check if it's assigned the correct ID
@@ -103,6 +106,29 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 	require.Len(sch.tasks, 2)
 
 	// Assuming the generateId() function is defined in the same package.
-	expectedID2 := generateId()()
+	expectedID2 := id()
 	require.Equal(expectedID2, sch.tasks[1].id)
+}
+
+func (suite *SchedulerTestSuite) Test_SetInterval() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler
+	taskInstruction := func() {}
+	sch.AddTask(taskInstruction)
+
+	// Set an interval for the last added task
+	interval := time.Second * 5
+	sch.SetInterval(interval)
+
+	// Check if the interval is set correctly for the last task
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(interval, sch.tasks[lastTaskIndex].interval)
+}
+
+func TestSchedulerTestSuite(t *testing.T) {
+	suite.Run(t, new(SchedulerTestSuite))
 }

@@ -59,11 +59,11 @@ func (s *scheduler) SetInterval(interval time.Duration) *scheduler {
 	return s
 }
 
-func (s *scheduler) PushToPending(task task) {
+func (s *scheduler) PushToPendingTasks(task task) {
 	s.pending_tasks = append(s.pending_tasks, task)
 }
 
-func (s *scheduler) RemoveFromPending(id int) {
+func (s *scheduler) RemoveFromPendingTaks(id int) {
 	for i, item := range s.pending_tasks {
 		if item.id == id {
 			s.pending_tasks = append(s.pending_tasks[:i], s.pending_tasks[i+1:]...)
@@ -76,9 +76,9 @@ func (s *scheduler) AddPendingJobs() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
 		if task.last_time_performed == zeroTime {
-			s.PushToPending(task)
+			s.PushToPendingTasks(task)
 		} else if time.Now().Add(-1*task.interval).Unix() >= task.last_time_performed.Unix() {
-			s.PushToPending(task)
+			s.PushToPendingTasks(task)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (s *scheduler) RunPendingJobs() {
 				break
 			}
 		}
-		s.RemoveFromPending(task.id)
+		s.RemoveFromPendingTaks(task.id)
 	}
 }
 
