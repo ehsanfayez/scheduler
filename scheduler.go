@@ -2,22 +2,22 @@ package scheduler
 
 import "time"
 
-type Task struct {
+type task struct {
 	id                  int
 	instruction         func()
 	interval            time.Duration
 	last_time_performed time.Time
 }
 
-type Scheduler struct {
-	tasks         []Task //
-	pending_tasks []Task
+type scheduler struct {
+	tasks         []task //
+	pending_tasks []task
 	jobs_count    int
 	id            func() int
 }
 
-func NewScheduler() *Scheduler {
-	return &Scheduler{
+func NewScheduler() *scheduler {
+	return &scheduler{
 		id:         generateId(),
 		jobs_count: 3,
 	}
@@ -31,30 +31,30 @@ func generateId() func() int {
 	}
 }
 
-func (s *Scheduler) SetJobsCount(count int) {
+func (s *scheduler) SetJobsCount(count int) {
 	s.jobs_count = count
 }
 
-func (s *Scheduler) Add(task func()) *Scheduler {
-	t := Task{
+func (s *scheduler) Add(ins func()) *scheduler {
+	t := task{
 		id:          s.id(),
-		instruction: task,
+		instruction: ins,
 	}
 	s.tasks = append(s.tasks, t)
 	return s
 }
 
-func (s *Scheduler) SetInterval(interval time.Duration) *Scheduler {
+func (s *scheduler) SetInterval(interval time.Duration) *scheduler {
 	index := len(s.tasks) - 1
 	s.tasks[index].interval = interval
 	return s
 }
 
-func (s *Scheduler) PushToPending(task Task) {
+func (s *scheduler) PushToPending(task task) {
 	s.pending_tasks = append(s.pending_tasks, task)
 }
 
-func (s *Scheduler) RemoveFromPending(id int) {
+func (s *scheduler) RemoveFromPending(id int) {
 	for i, item := range s.pending_tasks {
 		if item.id == id {
 			s.pending_tasks = append(s.pending_tasks[:i], s.pending_tasks[i+1:]...)
@@ -63,7 +63,7 @@ func (s *Scheduler) RemoveFromPending(id int) {
 	}
 }
 
-func (s *Scheduler) AddPendingJobs() *Scheduler {
+func (s *scheduler) AddPendingJobs() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
 		if task.last_time_performed == zeroTime {
@@ -75,7 +75,7 @@ func (s *Scheduler) AddPendingJobs() *Scheduler {
 	return s
 }
 
-func (s *Scheduler) RunPendingJobs() {
+func (s *scheduler) RunPendingJobs() {
 	for _, task := range s.pending_tasks {
 		go task.instruction()
 		for i := range s.tasks {
@@ -88,7 +88,7 @@ func (s *Scheduler) RunPendingJobs() {
 	}
 }
 
-func (s *Scheduler) Start() chan bool {
+func (s *scheduler) Start() chan bool {
 	stopped := make(chan bool, 1)
 	ticker := time.NewTicker(1 * time.Second)
 
