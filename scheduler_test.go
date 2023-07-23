@@ -12,7 +12,7 @@ func (suite *SchedulerTestSuite) SetupSuite() {
 
 }
 
-func (suite *SchedulerTestSuite) Test_NewScheduler_Success() {
+func (suite *SchedulerTestSuite) Test_NewScheduler() {
 	require := suite.Require()
 
 	// Create a new scheduler instance using NewScheduler
@@ -33,4 +33,23 @@ func (suite *SchedulerTestSuite) Test_NewScheduler_Success() {
 	// Check that the tasks and pending_tasks slices are initialized and empty
 	require.Nil(sch.tasks)
 	require.Nil(sch.pending_tasks)
+}
+
+func (suite *SchedulerTestSuite) Test_GenerateId() {
+	require := suite.Require()
+
+	// Get the generated ID function from generateId()
+	generateIDFunc := generateId()
+
+	// Generate the first ID and check if it is 1
+	expectedID := 1
+	id := generateIDFunc()
+	require.Equal(expectedID, id)
+
+	// Generate a few more IDs to verify incrementing behavior
+	for i := 2; i <= 10; i++ {
+		expectedID = i
+		id = generateIDFunc()
+		require.Equal(expectedID, id)
+	}
 }
