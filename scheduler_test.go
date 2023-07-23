@@ -60,11 +60,11 @@ func (suite *SchedulerTestSuite) Test_SetJobsCount() {
 	require := suite.Require()
 
 	// Create a new scheduler instance using NewScheduler
-	s := NewScheduler()
+	sch := NewScheduler()
 
 	// Test case 1: Set valid jobs count
 	first_count := 5
-	updatedScheduler, err := s.SetJobsCount(first_count)
+	updatedScheduler, err := sch.SetJobsCount(first_count)
 	require.NoError(err)
 
 	// Check that the jobs_count field is updated correctly
@@ -72,7 +72,7 @@ func (suite *SchedulerTestSuite) Test_SetJobsCount() {
 
 	// Test case 2: Set jobs count less than 1
 	second_count := -1
-	_, err = s.SetJobsCount(second_count)
+	_, err = sch.SetJobsCount(second_count)
 
 	// Check that it returns the expected error
 	expectedError := "count should be more than 0"
@@ -80,4 +80,29 @@ func (suite *SchedulerTestSuite) Test_SetJobsCount() {
 
 	// Check that the jobs_count field remains unchanged
 	require.Equal(first_count, updatedScheduler.jobs_count)
+}
+
+func (suite *SchedulerTestSuite) Test_AddTask() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add the first task and check if it's assigned the correct ID
+	taskInstruction1 := func() {}
+	sch.AddTask(taskInstruction1)
+	require.Len(sch.tasks, 1)
+
+	// Assuming the generateId() function is defined in the same package.
+	expectedID1 := generateId()()
+	require.Equal(expectedID1, sch.tasks[0].id)
+
+	// Add the second task and check if it's assigned the correct ID
+	taskInstruction2 := func() {}
+	sch.AddTask(taskInstruction2)
+	require.Len(sch.tasks, 2)
+
+	// Assuming the generateId() function is defined in the same package.
+	expectedID2 := generateId()()
+	require.Equal(expectedID2, sch.tasks[1].id)
 }

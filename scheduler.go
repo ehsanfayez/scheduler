@@ -43,7 +43,7 @@ func (s *scheduler) SetJobsCount(count int) (*scheduler, error) {
 	return s, nil
 }
 
-func (s *scheduler) Add(ins func()) *scheduler {
+func (s *scheduler) AddTask(ins func()) *scheduler {
 	t := task{
 		id:          s.id(),
 		instruction: ins,
