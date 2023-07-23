@@ -129,6 +129,29 @@ func (suite *SchedulerTestSuite) Test_SetInterval() {
 	require.Equal(interval, sch.tasks[lastTaskIndex].interval)
 }
 
+func (suite *SchedulerTestSuite) Test_PushToPendingTasks() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Create a task
+	taskInstruction := func() {}
+	task := task{
+		id:          1, // You can assign a specific ID here.
+		instruction: taskInstruction,
+	}
+
+	// Push the task to the pending tasks
+	sch.PushToPendingTasks(task)
+
+	// Check if the task is added correctly to the pending tasks
+	require.Len(sch.pending_tasks, 1)
+
+	// Check if the task content is correctly pushed to the pending tasks
+	require.Equal(task.id, sch.pending_tasks[0].id)
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }
