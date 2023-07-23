@@ -63,7 +63,7 @@ func (s *scheduler) PushToPendingTasks(task task) {
 	s.pending_tasks = append(s.pending_tasks, task)
 }
 
-func (s *scheduler) RemoveFromPendingTaks(id int) {
+func (s *scheduler) RemoveFromPendingTasks(id int) {
 	for i, item := range s.pending_tasks {
 		if item.id == id {
 			s.pending_tasks = append(s.pending_tasks[:i], s.pending_tasks[i+1:]...)
@@ -94,7 +94,7 @@ func (s *scheduler) RunPendingJobs() {
 				break
 			}
 		}
-		s.RemoveFromPendingTaks(task.id)
+		s.RemoveFromPendingTasks(task.id)
 	}
 }
 

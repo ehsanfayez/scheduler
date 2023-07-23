@@ -152,6 +152,29 @@ func (suite *SchedulerTestSuite) Test_PushToPendingTasks() {
 	require.Equal(task.id, sch.pending_tasks[0].id)
 }
 
+func (suite *SchedulerTestSuite) Test_RemoveFromPendingTasks() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Create a task
+	taskInstruction := func() {}
+	task := task{
+		id:          1, // You can assign a specific ID here.
+		instruction: taskInstruction,
+	}
+
+	// Push the task to the pending tasks
+	sch.PushToPendingTasks(task)
+
+	//	Remove from pending tasks
+	sch.RemoveFromPendingTasks(task.id)
+
+	// Check if the task is added correctly to the pending tasks
+	require.Len(sch.pending_tasks, 0)
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }
