@@ -1,6 +1,8 @@
 package scheduler
 
 import (
+	"errors"
+
 	"github.com/stretchr/testify/suite"
 )
 
@@ -52,4 +54,30 @@ func (suite *SchedulerTestSuite) Test_GenerateId() {
 		id = generateIDFunc()
 		require.Equal(expectedID, id)
 	}
+}
+
+func (suite *SchedulerTestSuite) Test_SetJobsCount() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	s := NewScheduler()
+
+	// Test case 1: Set valid jobs count
+	first_count := 5
+	updatedScheduler, err := s.SetJobsCount(first_count)
+	require.NoError(err)
+
+	// Check that the jobs_count field is updated correctly
+	require.Equal(first_count, updatedScheduler.jobs_count)
+
+	// Test case 2: Set jobs count less than 1
+	second_count := -1
+	_, err = s.SetJobsCount(second_count)
+
+	// Check that it returns the expected error
+	expectedError := "count should be more than 0"
+	require.EqualError(errors.New(expectedError), err.Error())
+
+	// Check that the jobs_count field remains unchanged
+	require.Equal(first_count, updatedScheduler.jobs_count)
 }

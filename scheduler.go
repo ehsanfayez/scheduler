@@ -1,6 +1,9 @@
 package scheduler
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type task struct {
 	id                  int
@@ -10,10 +13,10 @@ type task struct {
 }
 
 type scheduler struct {
-	tasks         []task //
-	pending_tasks []task
-	jobs_count    int
-	id            func() int
+	tasks         []task     // tasks to perform with their period
+	pending_tasks []task     // tasks that are their time to perform
+	jobs_count    int        // count of worker to run pending_jobs
+	id            func() int // func for get unique and sort id for us in task
 }
 
 func NewScheduler() *scheduler {
@@ -31,8 +34,13 @@ func generateId() func() int {
 	}
 }
 
-func (s *scheduler) SetJobsCount(count int) {
+func (s *scheduler) SetJobsCount(count int) (*scheduler, error) {
+	if count < 1 {
+		return s, errors.New("count should be more than 0")
+	}
+
 	s.jobs_count = count
+	return s, nil
 }
 
 func (s *scheduler) Add(ins func()) *scheduler {
@@ -40,6 +48,7 @@ func (s *scheduler) Add(ins func()) *scheduler {
 		id:          s.id(),
 		instruction: ins,
 	}
+
 	s.tasks = append(s.tasks, t)
 	return s
 }
@@ -72,6 +81,7 @@ func (s *scheduler) AddPendingJobs() *scheduler {
 			s.PushToPending(task)
 		}
 	}
+
 	return s
 }
 
