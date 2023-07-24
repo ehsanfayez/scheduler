@@ -224,6 +224,68 @@ func (suite *SchedulerTestSuite) Test_AddPendingTasks() {
 	}
 }
 
+func (suite *SchedulerTestSuite) Test_AddFailureTask() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a failure task with ID 1 and error message "error1"
+	sch.AddFailureTask(1, "error1")
+
+	// Check if the failed_tasks slice contains the expected failure task
+	expectedFailure := failure{
+		task_id: 1,
+		count:   1,
+		fails: []fail{
+			{
+				time:          time.Now(), // The time when the failure was added
+				error_message: "error1",
+			},
+		},
+	}
+
+	require.Len(sch.failed_tasks, 1)
+
+	// Compare the content of the failure tasks
+	require.Equal(expectedFailure, sch.failed_tasks[0])
+
+	// Add another failure task with ID 1 and a different error message "error2"
+	sch.AddFailureTask(1, "error2")
+
+	// Check if the count is incremented and the error message is added to the existing failure task
+	expectedFailure.count = 2
+	expectedFailure.fails = append(expectedFailure.fails, fail{
+		time:          time.Now(),
+		error_message: "error2",
+	})
+
+	require.Len(sch.failed_tasks, 1)
+
+	// Compare the content of the failure tasks
+	require.Equal(expectedFailure, sch.failed_tasks[0])
+
+	// Add a failure task with a new ID 2 and error message "error3"
+	sch.AddFailureTask(2, "error3")
+
+	// Check if a new failure task is added to the failed_tasks slice
+	expectedFailure2 := failure{
+		task_id: 2,
+		count:   1,
+		fails: []fail{
+			{
+				time:          time.Now(),
+				error_message: "error3",
+			},
+		},
+	}
+
+	require.Len(sch.failed_tasks, 2)
+
+	// Compare the content of the failure tasks
+	require.Equal(expectedFailure2, sch.failed_tasks[1])
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }

@@ -97,28 +97,37 @@ func (s *scheduler) AddPendingTasks() *scheduler {
 	return s
 }
 
-func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
+func (s *scheduler) FindFailureTask(id int) int {
 	for index, failed_task := range s.failed_tasks {
 		if failed_task.task_id == id {
-			new_failure := fail{
-				time:          time.Now(),
-				error_message: err,
-			}
-			s.failed_tasks[index].fails = append(s.failed_tasks[index].fails, new_failure)
-			s.failed_tasks[index].count++
-		} else {
-			s.failed_tasks = append(s.failed_tasks, failure{
-				task_id: id,
-				count:   1,
-				fails: []fail{
-					{
-						time:          time.Now(),
-						error_message: err,
-					},
-				},
-			})
+			return index
 		}
 	}
+	return -1
+}
+
+func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
+	index := s.FindFailureTask(id)
+	if index >= 0 {
+		new_failure := fail{
+			time:          time.Now(),
+			error_message: err,
+		}
+		s.failed_tasks[index].fails = append(s.failed_tasks[index].fails, new_failure)
+		s.failed_tasks[index].count++
+	} else {
+		s.failed_tasks = append(s.failed_tasks, failure{
+			task_id: id,
+			count:   1,
+			fails: []fail{
+				{
+					time:          time.Now(),
+					error_message: err,
+				},
+			},
+		})
+	}
+
 	return s
 }
 
