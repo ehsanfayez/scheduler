@@ -306,6 +306,74 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require.Equal(expectedFailure2, sch.failed_tasks[1])
 }
 
+func (suite *SchedulerTestSuite) Test_RunPendingTasks() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Create a task with interval of 1 second (1000 milliseconds)
+	task1 := task{
+		id:                  1,
+		instruction:         func() error { return errors.New("error task 1") },
+		interval:            time.Second,
+		last_time_performed: time.Time{},
+	}
+	// Add the task to the scheduler's tasks
+	sch.tasks = append(sch.tasks, task1)
+
+	// Run the pending tasks
+	sch.AddPendingTasks().RunPendingTasks()
+
+	// Wait for goroutines to finish
+	time.Sleep(time.Second)
+
+	// Get the current time
+	now := time.Now()
+
+	// Check if the failure task was added
+	expectedFailureTask := failure{
+		task_id: 1,
+		count:   1,
+		fails: []fail{
+			{
+				time:          now.Add(-1 * time.Second),
+				error_message: "Some error occurred",
+			},
+		},
+	}
+
+	require.Len(sch.failed_tasks, 1)
+
+	// Compare the content of the failure tasks
+	require.Equal(expectedFailureTask.task_id, sch.failed_tasks[0].task_id)
+	require.Equal(expectedFailureTask.fails[0].time.Unix(), sch.failed_tasks[0].fails[0].time.Unix())
+	require.Len(sch.failed_tasks[0].fails, 1)
+
+	// Create a mock task with ID 2 that returns no error
+	noErrTask := task{
+		id:                  2,
+		instruction:         func() error { return nil },
+		interval:            time.Second,
+		last_time_performed: time.Time{},
+	}
+
+	// Add the mock task to the scheduler's pending_tasks
+	sch.tasks = append(sch.tasks, noErrTask)
+
+	// Run the pending tasks
+	sch.AddPendingTasks()
+
+	// Check if the last_time_performed was updated and the task was removed from pending_tasks
+	require.Len(sch.pending_tasks, 2)
+	sch.RunPendingTasks()
+
+	// Wait for goroutines to finish
+	time.Sleep(time.Second)
+	require.Len(sch.failed_tasks, 1)
+	require.Len(sch.failed_tasks[0].fails, 2)
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }

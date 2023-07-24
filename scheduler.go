@@ -131,12 +131,13 @@ func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
 	return s
 }
 
-func (s *scheduler) RunPendingJobs() {
+func (s *scheduler) RunPendingTasks() {
 	for _, pending_task := range s.pending_tasks {
 		go func(t task) {
 			err := t.instruction()
 			if err != nil {
 				s.AddFailureTask(t.id, err.Error())
+				s.RemoveFromPendingTasks(t.id)
 			} else {
 				for i := range s.tasks {
 					if s.tasks[i].id == t.id {
@@ -158,7 +159,7 @@ func (s *scheduler) Start() chan bool {
 		for {
 			select {
 			case <-ticker.C:
-				s.AddPendingTasks().RunPendingJobs()
+				s.AddPendingTasks().RunPendingTasks()
 			case <-stopped:
 				ticker.Stop()
 				return
