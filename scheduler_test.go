@@ -224,6 +224,26 @@ func (suite *SchedulerTestSuite) Test_AddPendingTasks() {
 	}
 }
 
+func (suite *SchedulerTestSuite) Test_FindFailureTask() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a failure task with ID 1 and error message "error1"
+	sch.AddFailureTask(1, "error1")
+
+	// check index of exist failure task return correctly
+	expectedIndex := 0
+	index := sch.FindFailureTask(1)
+	require.Equal(expectedIndex, index)
+
+	// check index of does not exist failure task return correctly
+	expectedIndex = -1
+	index = sch.FindFailureTask(2)
+	require.Equal(expectedIndex, index)
+}
+
 func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require := suite.Require()
 
