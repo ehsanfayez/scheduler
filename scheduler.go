@@ -7,14 +7,26 @@ import (
 
 type task struct {
 	id                  int
-	instruction         func()
+	instruction         func() error
 	interval            time.Duration
 	last_time_performed time.Time
+}
+
+type fail struct {
+	time          time.Time
+	error_message string
+}
+
+type failure struct {
+	task_id int
+	count   int
+	fails   []fail
 }
 
 type scheduler struct {
 	tasks         []task     // tasks to perform with their period
 	pending_tasks []task     // tasks that are their time to perform
+	failed_tasks  []failure  // times of a task failed with details
 	jobs_count    int        // count of worker to run pending_jobs
 	id            func() int // func for get unique and sort id for us in task
 }
@@ -43,7 +55,7 @@ func (s *scheduler) SetJobsCount(count int) (*scheduler, error) {
 	return s, nil
 }
 
-func (s *scheduler) AddTask(ins func()) *scheduler {
+func (s *scheduler) AddTask(ins func() error) *scheduler {
 	t := task{
 		id:          s.id(),
 		instruction: ins,
@@ -85,16 +97,47 @@ func (s *scheduler) AddPendingJobs() *scheduler {
 	return s
 }
 
-func (s *scheduler) RunPendingJobs() {
-	for _, task := range s.pending_tasks {
-		go task.instruction()
-		for i := range s.tasks {
-			if s.tasks[i].id == task.id {
-				s.tasks[i].last_time_performed = time.Now()
-				break
+func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
+	for index, failed_task := range s.failed_tasks {
+		if failed_task.task_id == id {
+			new_failure := fail{
+				time:          time.Now(),
+				error_message: err,
 			}
+			s.failed_tasks[index].fails = append(s.failed_tasks[index].fails, new_failure)
+			s.failed_tasks[index].count++
+		} else {
+			s.failed_tasks = append(s.failed_tasks, failure{
+				task_id: id,
+				count:   1,
+				fails: []fail{
+					{
+						time:          time.Now(),
+						error_message: err,
+					},
+				},
+			})
 		}
-		s.RemoveFromPendingTasks(task.id)
+	}
+	return s
+}
+
+func (s *scheduler) RunPendingJobs() {
+	for _, pending_task := range s.pending_tasks {
+		go func(t task) {
+			err := t.instruction()
+			if err != nil {
+				s.AddFailureTask(t.id, err.Error())
+			} else {
+				for i := range s.tasks {
+					if s.tasks[i].id == t.id {
+						s.tasks[i].last_time_performed = time.Now()
+						break
+					}
+				}
+				s.RemoveFromPendingTasks(t.id)
+			}
+		}(pending_task)
 	}
 }
 

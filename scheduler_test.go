@@ -91,7 +91,7 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 	sch := NewScheduler()
 
 	// Add the first task and check if it's assigned the correct ID
-	taskInstruction1 := func() {}
+	taskInstruction1 := func() error { return nil }
 	sch.AddTask(taskInstruction1)
 	require.Len(sch.tasks, 1)
 
@@ -101,7 +101,7 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 	require.Equal(expectedID1, sch.tasks[0].id)
 
 	// Add the second task and check if it's assigned the correct ID
-	taskInstruction2 := func() {}
+	taskInstruction2 := func() error { return nil }
 	sch.AddTask(taskInstruction2)
 	require.Len(sch.tasks, 2)
 
@@ -117,7 +117,7 @@ func (suite *SchedulerTestSuite) Test_SetInterval() {
 	sch := NewScheduler()
 
 	// Add a task to the scheduler
-	taskInstruction := func() {}
+	taskInstruction := func() error { return nil }
 	sch.AddTask(taskInstruction)
 
 	// Set an interval for the last added task
@@ -136,7 +136,7 @@ func (suite *SchedulerTestSuite) Test_PushToPendingTasks() {
 	sch := NewScheduler()
 
 	// Create a task
-	taskInstruction := func() {}
+	taskInstruction := func() error { return nil }
 	task := task{
 		id:          1, // You can assign a specific ID here.
 		instruction: taskInstruction,
@@ -159,7 +159,7 @@ func (suite *SchedulerTestSuite) Test_RemoveFromPendingTasks() {
 	sch := NewScheduler()
 
 	// Create a task
-	taskInstruction := func() {}
+	taskInstruction := func() error { return nil }
 	task := task{
 		id:          1, // You can assign a specific ID here.
 		instruction: taskInstruction,
