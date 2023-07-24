@@ -84,7 +84,7 @@ func (s *scheduler) RemoveFromPendingTasks(id int) {
 	}
 }
 
-func (s *scheduler) AddPendingJobs() *scheduler {
+func (s *scheduler) AddPendingTasks() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
 		if task.last_time_performed == zeroTime {
@@ -149,7 +149,7 @@ func (s *scheduler) Start() chan bool {
 		for {
 			select {
 			case <-ticker.C:
-				s.AddPendingJobs().RunPendingJobs()
+				s.AddPendingTasks().RunPendingJobs()
 			case <-stopped:
 				ticker.Stop()
 				return

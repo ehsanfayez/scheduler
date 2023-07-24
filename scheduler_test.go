@@ -175,6 +175,55 @@ func (suite *SchedulerTestSuite) Test_RemoveFromPendingTasks() {
 	require.Len(sch.pending_tasks, 0)
 }
 
+func (suite *SchedulerTestSuite) Test_AddPendingTasks() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Create a task with interval of 1 second (1000 milliseconds)
+	task1 := task{
+		id:                  1,
+		instruction:         func() error { return nil },
+		interval:            time.Second,
+		last_time_performed: time.Now().Add(-2 * time.Second), // Last execution 2 seconds ago
+	}
+	// Add the task to the scheduler's tasks
+	sch.tasks = append(sch.tasks, task1)
+
+	// Create a task with interval of 2 seconds (2000 milliseconds)
+	task2 := task{
+		id:                  2,
+		instruction:         func() error { return nil },
+		interval:            2 * time.Second,
+		last_time_performed: time.Now().Add(-1 * time.Second), // Last execution 1 second ago
+	}
+	// Add the task to the scheduler's tasks
+	sch.tasks = append(sch.tasks, task2)
+
+	// Create a task with interval of 3 seconds (3000 milliseconds)
+	task3 := task{
+		id:                  3,
+		instruction:         func() error { return nil },
+		interval:            3 * time.Second,
+		last_time_performed: time.Now().Add(-4 * time.Second), // Last execution 4 seconds ago
+	}
+	// Add the task to the scheduler's tasks
+	sch.tasks = append(sch.tasks, task3)
+
+	// Call AddPendingTasks to add the pending tasks to the scheduler's pending_tasks
+	sch.AddPendingTasks()
+
+	// Check if the pending_tasks contains the expected tasks
+	expectedPendingTasks := []task{task1, task3}
+	require.Len(sch.pending_tasks, 2)
+
+	// Check if the pending tasks are the expected ones
+	for i := 0; i < len(expectedPendingTasks); i++ {
+		require.Equal(expectedPendingTasks[i].id, sch.pending_tasks[i].id)
+	}
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }
