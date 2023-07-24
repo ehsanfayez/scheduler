@@ -374,6 +374,28 @@ func (suite *SchedulerTestSuite) Test_RunPendingTasks() {
 	require.Len(sch.failed_tasks[0].fails, 2)
 }
 
+func (suite *SchedulerTestSuite) Test_Start() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	s := NewScheduler()
+
+	// Start the scheduler and get the stopped channel
+	stopped := s.Start()
+
+	// Wait for 3 seconds to let the scheduler run
+	time.Sleep(3 * time.Second)
+
+	// Stop the scheduler by sending a signal on the stopped channel
+	stopped <- true
+
+	// Wait for the scheduler to stop
+	time.Sleep(1 * time.Second)
+
+	// Check if the scheduler stopped by verifying that no pending tasks are left
+	require.Empty(s.pending_tasks)
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }
