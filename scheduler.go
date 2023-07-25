@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+// Define the possible states of the scheduler
+type schedulerState int
+
+const (
+	stateNew schedulerState = iota
+	stateTaskAdded
+)
+
 type task struct {
 	id                  int
 	instruction         func() error
@@ -29,12 +37,16 @@ type scheduler struct {
 	failed_tasks  []failure  // times of a task failed with details
 	jobs_count    int        // count of worker to run pending_jobs
 	id            func() int // func for get unique and sort id for us in task
+
+	last_added_task_index int            // index of the most recently added task
+	state                 schedulerState // current state of the scheduler
 }
 
 func NewScheduler() *scheduler {
 	return &scheduler{
 		id:         generateId(),
 		jobs_count: 3,
+		state:      stateNew, // Initialize the state to "New"
 	}
 }
 
@@ -56,18 +68,40 @@ func (s *scheduler) SetJobsCount(count int) (*scheduler, error) {
 }
 
 func (s *scheduler) AddTask(ins func() error) *scheduler {
+	// Check if AddTask() has been called before SetInterval()
+	if s.state != stateNew {
+		panic(errors.New("you can call AddTask() twice before call SetInterval for last AddTask()"))
+	}
+
 	t := task{
 		id:          s.id(),
 		instruction: ins,
 	}
 
 	s.tasks = append(s.tasks, t)
+	// Set the index of the most recently added task
+	s.last_added_task_index = len(s.tasks) - 1
+
+	// Update the state to "TaskAdded"
+	s.state = stateTaskAdded
 	return s
 }
 
 func (s *scheduler) SetInterval(interval time.Duration) *scheduler {
-	index := len(s.tasks) - 1
-	s.tasks[index].interval = interval
+	// Check if AddTask() has been called before SetInterval()
+	if s.state != stateTaskAdded {
+		panic(errors.New("SetInterval() should be called after AddTask()"))
+	}
+
+	if s.last_added_task_index == -1 {
+		// No task has been added yet, return without setting the interval
+		return s
+	}
+
+	// Set the interval for the most recently added task
+	s.tasks[s.last_added_task_index].interval = interval
+	s.last_added_task_index = -1
+	s.state = stateNew
 	return s
 }
 
