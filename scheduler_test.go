@@ -13,7 +13,6 @@ type SchedulerTestSuite struct {
 }
 
 func (suite *SchedulerTestSuite) SetupSuite() {
-
 }
 
 func (suite *SchedulerTestSuite) Test_NewScheduler() {
@@ -92,7 +91,7 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 
 	// Add the first task and check if it's assigned the correct ID
 	taskInstruction1 := func() error { return nil }
-	sch.AddTask(taskInstruction1)
+	sch.AddTask(taskInstruction1).SetInterval(1 * time.Second)
 	require.Len(sch.tasks, 1)
 
 	// Assuming the generateId() function is defined in the same package.
@@ -102,7 +101,7 @@ func (suite *SchedulerTestSuite) Test_AddTask() {
 
 	// Add the second task and check if it's assigned the correct ID
 	taskInstruction2 := func() error { return nil }
-	sch.AddTask(taskInstruction2)
+	sch.AddTask(taskInstruction2).SetInterval(1 * time.Second)
 	require.Len(sch.tasks, 2)
 
 	// Assuming the generateId() function is defined in the same package.
