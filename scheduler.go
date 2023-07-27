@@ -33,9 +33,9 @@ type failure struct {
 
 type scheduler struct {
 	tasks         []task     // tasks to perform with their period
-	pending_tasks []task     // tasks that are their time to perform
+	pending_tasks chan task  // tasks that are their time to perform
 	failed_tasks  []failure  // times of a task failed with details
-	jobs_count    int        // count of worker to run pending_jobs
+	worker_count  int        // count of worker to run pending_jobs
 	id            func() int // func for get unique and sort id for us in task
 
 	last_added_task_index int            // index of the most recently added task
@@ -44,9 +44,10 @@ type scheduler struct {
 
 func NewScheduler() *scheduler {
 	return &scheduler{
-		id:         generateId(),
-		jobs_count: 3,
-		state:      stateNew, // Initialize the state to "New"
+		id:            generateId(),
+		worker_count:  3,
+		state:         stateNew, // Initialize the state to "New"
+		pending_tasks: make(chan task),
 	}
 }
 
@@ -58,12 +59,12 @@ func generateId() func() int {
 	}
 }
 
-func (s *scheduler) SetJobsCount(count int) (*scheduler, error) {
+func (s *scheduler) SetWorkerCount(count int) (*scheduler, error) {
 	if count < 1 {
 		return s, errors.New("count should be more than 0")
 	}
 
-	s.jobs_count = count
+	s.worker_count = count
 	return s, nil
 }
 
@@ -105,26 +106,11 @@ func (s *scheduler) SetInterval(interval time.Duration) *scheduler {
 	return s
 }
 
-func (s *scheduler) PushToPendingTasks(task task) {
-	s.pending_tasks = append(s.pending_tasks, task)
-}
-
-func (s *scheduler) RemoveFromPendingTasks(id int) {
-	for i, item := range s.pending_tasks {
-		if item.id == id {
-			s.pending_tasks = append(s.pending_tasks[:i], s.pending_tasks[i+1:]...)
-			break
-		}
-	}
-}
-
-func (s *scheduler) AddPendingTasks() *scheduler {
+func (s *scheduler) CheckAndRunTask() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
-		if task.last_time_performed == zeroTime {
-			s.PushToPendingTasks(task)
-		} else if time.Now().Add(-1*task.interval).Unix() >= task.last_time_performed.Unix() {
-			s.PushToPendingTasks(task)
+		if task.last_time_performed == zeroTime || time.Now().Add(-1*task.interval).Unix() >= task.last_time_performed.Unix() {
+			s.pending_tasks <- task
 		}
 	}
 
@@ -165,37 +151,42 @@ func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
 	return s
 }
 
-func (s *scheduler) RunPendingTasks() {
-	for _, pending_task := range s.pending_tasks {
-		go func(t task) {
-			err := t.instruction()
-			if err != nil {
-				s.AddFailureTask(t.id, err.Error())
-				s.RemoveFromPendingTasks(t.id)
-			} else {
-				for i := range s.tasks {
-					if s.tasks[i].id == t.id {
-						s.tasks[i].last_time_performed = time.Now()
-						break
-					}
+// Define the worker function that processes tasks
+func (s *scheduler) worker(taskQueue <-chan task, workerID int) {
+	for task := range taskQueue {
+		err := task.instruction() // Execute the task
+		if err != nil {
+			s.AddFailureTask(task.id, err.Error())
+		} else {
+			for i := range s.tasks {
+				if s.tasks[i].id == task.id {
+					s.tasks[i].last_time_performed = time.Now()
+					break
 				}
-				s.RemoveFromPendingTasks(t.id)
 			}
-		}(pending_task)
+		}
 	}
 }
 
 func (s *scheduler) Start() chan bool {
 	stopped := make(chan bool, 1)
+
+	// Create worker pool
+	for i := 0; i < s.worker_count; i++ {
+		go s.worker(s.pending_tasks, i)
+	}
+
 	ticker := time.NewTicker(1 * time.Second)
 
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				s.AddPendingTasks().RunPendingTasks()
+				s.CheckAndRunTask()
 			case <-stopped:
 				ticker.Stop()
+				// Close the pending_tasks channel to signal workers to stop
+				close(s.pending_tasks)
 				return
 			}
 		}

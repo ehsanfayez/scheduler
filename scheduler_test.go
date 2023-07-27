@@ -24,9 +24,9 @@ func (suite *SchedulerTestSuite) Test_NewScheduler() {
 	// Check that the scheduler is not nil
 	require.NotNil(sch)
 
-	// Check the jobs_count field
-	expectedJobsCount := 3
-	require.Equal(expectedJobsCount, sch.jobs_count)
+	// Check the worker_count field
+	expectedWorkerCount := 3
+	require.Equal(expectedWorkerCount, sch.worker_count)
 
 	// Since the id field is a function, we can call it to get the value and check its correctness.
 	// Assuming generateId() is defined in the same package as NewScheduler.
@@ -35,7 +35,7 @@ func (suite *SchedulerTestSuite) Test_NewScheduler() {
 
 	// Check that the tasks and pending_tasks slices are initialized and empty
 	require.Nil(sch.tasks)
-	require.Nil(sch.pending_tasks)
+	require.Len(sch.pending_tasks, 0)
 }
 
 func (suite *SchedulerTestSuite) Test_GenerateId() {
@@ -57,33 +57,33 @@ func (suite *SchedulerTestSuite) Test_GenerateId() {
 	}
 }
 
-func (suite *SchedulerTestSuite) Test_SetJobsCount() {
+func (suite *SchedulerTestSuite) Test_SetWorkerCount() {
 	require := suite.Require()
 
 	// Create a new scheduler instance using NewScheduler
 	sch := NewScheduler()
 
-	// Test case 1: Set valid jobs count
+	// Test case 1: Set valid worker count
 	first_count := 5
-	updatedScheduler, err := sch.SetJobsCount(first_count)
+	updatedScheduler, err := sch.SetWorkerCount(first_count)
 	require.NoError(err)
 
-	// Check that the jobs_count field is updated correctly
-	require.Equal(first_count, updatedScheduler.jobs_count)
+	// Check that the worker_count field is updated correctly
+	require.Equal(first_count, updatedScheduler.worker_count)
 
-	// Test case 2: Set jobs count less than 1
+	// Test case 2: Set worker count less than 1
 	second_count := -1
-	_, err = sch.SetJobsCount(second_count)
+	_, err = sch.SetWorkerCount(second_count)
 
 	// Check that it returns the expected error
 	expectedError := "count should be more than 0"
 	require.EqualError(errors.New(expectedError), err.Error())
 
-	// Check that the jobs_count field remains unchanged
-	require.Equal(first_count, updatedScheduler.jobs_count)
+	// Check that the worker_count field remains unchanged
+	require.Equal(first_count, updatedScheduler.worker_count)
 }
 
-func (suite *SchedulerTestSuite) Test_AddTask() {
+func (suite *SchedulerTestSuite) Test_CheckAndRunTask() {
 	require := suite.Require()
 
 	// Create a new scheduler instance using NewScheduler
@@ -126,101 +126,6 @@ func (suite *SchedulerTestSuite) Test_SetInterval() {
 	// Check if the interval is set correctly for the last task
 	lastTaskIndex := len(sch.tasks) - 1
 	require.Equal(interval, sch.tasks[lastTaskIndex].interval)
-}
-
-func (suite *SchedulerTestSuite) Test_PushToPendingTasks() {
-	require := suite.Require()
-
-	// Create a new scheduler instance using NewScheduler
-	sch := NewScheduler()
-
-	// Create a task
-	taskInstruction := func() error { return nil }
-	task := task{
-		id:          1, // You can assign a specific ID here.
-		instruction: taskInstruction,
-	}
-
-	// Push the task to the pending tasks
-	sch.PushToPendingTasks(task)
-
-	// Check if the task is added correctly to the pending tasks
-	require.Len(sch.pending_tasks, 1)
-
-	// Check if the task content is correctly pushed to the pending tasks
-	require.Equal(task.id, sch.pending_tasks[0].id)
-}
-
-func (suite *SchedulerTestSuite) Test_RemoveFromPendingTasks() {
-	require := suite.Require()
-
-	// Create a new scheduler instance using NewScheduler
-	sch := NewScheduler()
-
-	// Create a task
-	taskInstruction := func() error { return nil }
-	task := task{
-		id:          1, // You can assign a specific ID here.
-		instruction: taskInstruction,
-	}
-
-	// Push the task to the pending tasks
-	sch.PushToPendingTasks(task)
-
-	//	Remove from pending tasks
-	sch.RemoveFromPendingTasks(task.id)
-
-	// Check if the task is added correctly to the pending tasks
-	require.Len(sch.pending_tasks, 0)
-}
-
-func (suite *SchedulerTestSuite) Test_AddPendingTasks() {
-	require := suite.Require()
-
-	// Create a new scheduler instance using NewScheduler
-	sch := NewScheduler()
-
-	// Create a task with interval of 1 second (1000 milliseconds)
-	task1 := task{
-		id:                  1,
-		instruction:         func() error { return nil },
-		interval:            time.Second,
-		last_time_performed: time.Now().Add(-2 * time.Second), // Last execution 2 seconds ago
-	}
-	// Add the task to the scheduler's tasks
-	sch.tasks = append(sch.tasks, task1)
-
-	// Create a task with interval of 2 seconds (2000 milliseconds)
-	task2 := task{
-		id:                  2,
-		instruction:         func() error { return nil },
-		interval:            2 * time.Second,
-		last_time_performed: time.Now().Add(-1 * time.Second), // Last execution 1 second ago
-	}
-	// Add the task to the scheduler's tasks
-	sch.tasks = append(sch.tasks, task2)
-
-	// Create a task with interval of 3 seconds (3000 milliseconds)
-	task3 := task{
-		id:                  3,
-		instruction:         func() error { return nil },
-		interval:            3 * time.Second,
-		last_time_performed: time.Now().Add(-4 * time.Second), // Last execution 4 seconds ago
-	}
-	// Add the task to the scheduler's tasks
-	sch.tasks = append(sch.tasks, task3)
-
-	// Call AddPendingTasks to add the pending tasks to the scheduler's pending_tasks
-	sch.AddPendingTasks()
-
-	// Check if the pending_tasks contains the expected tasks
-	expectedPendingTasks := []task{task1, task3}
-	require.Len(sch.pending_tasks, 2)
-
-	// Check if the pending tasks are the expected ones
-	for i := 0; i < len(expectedPendingTasks); i++ {
-		require.Equal(expectedPendingTasks[i].id, sch.pending_tasks[i].id)
-	}
 }
 
 func (suite *SchedulerTestSuite) Test_FindFailureTask() {
@@ -303,74 +208,6 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 
 	// Compare the content of the failure tasks
 	require.Equal(expectedFailure2, sch.failed_tasks[1])
-}
-
-func (suite *SchedulerTestSuite) Test_RunPendingTasks() {
-	require := suite.Require()
-
-	// Create a new scheduler instance using NewScheduler
-	sch := NewScheduler()
-
-	// Create a task with interval of 1 second (1000 milliseconds)
-	task1 := task{
-		id:                  1,
-		instruction:         func() error { return errors.New("error task 1") },
-		interval:            time.Second,
-		last_time_performed: time.Time{},
-	}
-	// Add the task to the scheduler's tasks
-	sch.tasks = append(sch.tasks, task1)
-
-	// Run the pending tasks
-	sch.AddPendingTasks().RunPendingTasks()
-
-	// Wait for goroutines to finish
-	time.Sleep(time.Second)
-
-	// Get the current time
-	now := time.Now()
-
-	// Check if the failure task was added
-	expectedFailureTask := failure{
-		task_id: 1,
-		count:   1,
-		fails: []fail{
-			{
-				time:          now.Add(-1 * time.Second),
-				error_message: "Some error occurred",
-			},
-		},
-	}
-
-	require.Len(sch.failed_tasks, 1)
-
-	// Compare the content of the failure tasks
-	require.Equal(expectedFailureTask.task_id, sch.failed_tasks[0].task_id)
-	require.Equal(expectedFailureTask.fails[0].time.Unix(), sch.failed_tasks[0].fails[0].time.Unix())
-	require.Len(sch.failed_tasks[0].fails, 1)
-
-	// Create a mock task with ID 2 that returns no error
-	noErrTask := task{
-		id:                  2,
-		instruction:         func() error { return nil },
-		interval:            time.Second,
-		last_time_performed: time.Time{},
-	}
-
-	// Add the mock task to the scheduler's pending_tasks
-	sch.tasks = append(sch.tasks, noErrTask)
-
-	// Run the pending tasks
-	sch.AddPendingTasks()
-
-	// Check if the last_time_performed was updated and the task was removed from pending_tasks
-	require.Len(sch.pending_tasks, 2)
-	sch.RunPendingTasks()
-
-	// Wait for goroutines to finish
-	time.Sleep(time.Second)
-	require.Len(sch.failed_tasks, 1)
-	require.Len(sch.failed_tasks[0].fails, 2)
 }
 
 func (suite *SchedulerTestSuite) Test_Start() {
