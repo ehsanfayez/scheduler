@@ -12,6 +12,7 @@ type task struct {
 	start_time          time.Time
 	finish_time         time.Time
 	last_time_performed time.Time
+	count               int
 }
 
 type fail struct {
@@ -62,6 +63,7 @@ func (s *scheduler) AddTask(ins func() error) *task {
 	t := task{
 		id:          s.id(),
 		instruction: ins,
+		count:       -1,
 	}
 
 	s.tasks = append(s.tasks, t)
@@ -85,10 +87,19 @@ func (t *task) FinishAt(finish time.Time) *task {
 	return t
 }
 
+func (t *task) SetCount(count int) *task {
+	if count < 0 {
+		panic("Invalid Count")
+	}
+
+	t.count = count
+	return t
+}
+
 func (s *scheduler) CheckAndRunTask() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
-		if s.IsFinishTime(task.id) || !s.IsStartTime(task) {
+		if s.IsFinishTime(task.id) || !s.IsStartTime(task) || !s.CheckCount(task.id) {
 			continue
 		}
 
@@ -122,6 +133,23 @@ func (s *scheduler) IsFinishTime(id int) bool {
 	}
 
 	return false
+}
+
+func (s *scheduler) CheckCount(id int) bool {
+	for index, task := range s.tasks {
+		if task.id == id {
+			if task.count == 0 {
+				// Task has reached its count, remove it from the list
+				s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
+				return false
+			} else {
+				s.tasks[index].count = s.tasks[index].count - 1
+				return true
+			}
+		}
+	}
+
+	return true
 }
 
 func (s *scheduler) FindFailureTask(id int) int {
