@@ -57,6 +57,72 @@ func (suite *SchedulerTestSuite) Test_GenerateId() {
 	}
 }
 
+func (suite *SchedulerTestSuite) Test_GetTaskId() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	expectedID := generateId()()
+	taskId := sch.AddTask(func() error { return nil }).GetTaskId()
+	require.Equal(expectedID, taskId)
+}
+
+func (suite *SchedulerTestSuite) Test_StopTaskById() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	taskId := sch.AddTask(func() error { return nil }).GetTaskId()
+	require.Len(sch.tasks, 1)
+
+	sch.StopTaskById(taskId)
+	require.Len(sch.tasks, 0)
+}
+
+func (suite *SchedulerTestSuite) Test_ForceStopTaskById() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	taskId := sch.AddTask(func() error { return nil }).GetTaskId()
+	require.Len(sch.tasks, 1)
+
+	sch.ForceStopTaskById(taskId)
+	require.Len(sch.tasks, 0)
+	require.Len(sch.force_pending_tasks, 1)
+}
+
+func (suite *SchedulerTestSuite) Test_RemoveTaskIdFromForce() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+	taskId := sch.AddTask(func() error { return nil }).GetTaskId()
+
+	require.Len(sch.tasks, 1)
+	sch.ForceStopTaskById(taskId)
+	require.Len(sch.force_pending_tasks, 1)
+
+	sch.RemoveTaskIdFromForce(taskId)
+	require.Len(sch.force_pending_tasks, 0)
+}
+
+func (suite *SchedulerTestSuite) Test_ForceRemoveTaskExist() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+	taskId := sch.AddTask(func() error { return nil }).GetTaskId()
+
+	require.Len(sch.tasks, 1)
+	sch.ForceStopTaskById(taskId)
+	check := sch.ForceRemoveTaskExist(taskId)
+	require.Equal(true, check)
+}
+
 func (suite *SchedulerTestSuite) Test_SetWorkerCount() {
 	require := suite.Require()
 
