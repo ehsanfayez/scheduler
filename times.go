@@ -2,72 +2,72 @@ package scheduler
 
 import "time"
 
-func (s *scheduler) EverySecond() *scheduler {
-	s.SetInterval(1 * time.Second)
-	return s
+func (t *task) EverySecond() *task {
+	t.SetInterval(1 * time.Second)
+	return t
 }
 
-func (s *scheduler) EverySeconds(t int) *scheduler {
-	s.SetInterval(time.Duration(t) * time.Second)
-	return s
+func (t *task) EverySeconds(count int) *task {
+	t.SetInterval(time.Duration(count) * time.Second)
+	return t
 }
 
-func (s *scheduler) EveryMinute() *scheduler {
-	s.SetInterval(1 * time.Minute)
-	return s
+func (t *task) EveryMinute() *task {
+	t.SetInterval(1 * time.Minute)
+	return t
 }
 
-func (s *scheduler) EveryMinutes(t int) *scheduler {
-	s.SetInterval(time.Duration(t) * time.Minute)
-	return s
+func (t *task) EveryMinutes(count int) *task {
+	t.SetInterval(time.Duration(count) * time.Minute)
+	return t
 }
 
-func (s *scheduler) EveryHour() *scheduler {
-	s.SetInterval(1 * time.Hour)
-	return s
+func (t *task) EveryHour() *task {
+	t.SetInterval(1 * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryHours(t int) *scheduler {
-	s.SetInterval(time.Duration(t) * time.Hour)
-	return s
+func (t *task) EveryHours(count int) *task {
+	t.SetInterval(time.Duration(count) * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryDay() *scheduler {
-	s.SetInterval(24 * time.Hour)
-	return s
+func (t *task) EveryDay() *task {
+	t.SetInterval(24 * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryDays(t int) *scheduler {
-	s.SetInterval(time.Duration(t*24) * time.Hour)
-	return s
+func (t *task) EveryDays(count int) *task {
+	t.SetInterval(time.Duration(count*24) * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryWeek() *scheduler {
-	s.SetInterval(24 * 7 * time.Hour)
-	return s
+func (t *task) EveryWeek() *task {
+	t.SetInterval(24 * 7 * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryWeeks(t int) *scheduler {
-	s.SetInterval(time.Duration(t*24*7) * time.Hour)
-	return s
+func (t *task) EveryWeeks(count int) *task {
+	t.SetInterval(time.Duration(count*24*7) * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryMonth() *scheduler {
-	s.SetInterval(30 * 24 * time.Hour)
-	return s
+func (t *task) EveryMonth() *task {
+	t.SetInterval(30 * 24 * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryMonths(t int) *scheduler {
-	s.SetInterval(time.Duration(t*24*30) * time.Hour)
-	return s
+func (t *task) EveryMonths(count int) *task {
+	t.SetInterval(time.Duration(count*24*30) * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryYear() *scheduler {
-	s.SetInterval(365 * 24 * time.Hour)
-	return s
+func (t *task) EveryYear() *task {
+	t.SetInterval(365 * 24 * time.Hour)
+	return t
 }
 
-func (s *scheduler) EveryYears(t int) *scheduler {
-	s.SetInterval(time.Duration(t*365*24) * time.Hour)
-	return s
+func (t *task) EveryYears(count int) *task {
+	t.SetInterval(time.Duration(count*365*24) * time.Hour)
+	return t
 }
