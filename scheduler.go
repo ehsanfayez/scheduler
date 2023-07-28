@@ -5,18 +5,12 @@ import (
 	"time"
 )
 
-// Define the possible states of the scheduler
-type schedulerState int
-
-const (
-	stateNew schedulerState = iota
-	stateTaskAdded
-)
-
 type task struct {
 	id                  int
 	instruction         func() error
 	interval            time.Duration
+	start_time          time.Time
+	finish_time         time.Time
 	last_time_performed time.Time
 }
 
@@ -37,16 +31,12 @@ type scheduler struct {
 	failed_tasks  []failure  // times of a task failed with details
 	worker_count  int        // count of worker to run pending_jobs
 	id            func() int // func for get unique and sort id for us in task
-
-	last_added_task_index int            // index of the most recently added task
-	state                 schedulerState // current state of the scheduler
 }
 
 func NewScheduler() *scheduler {
 	return &scheduler{
 		id:            generateId(),
 		worker_count:  3,
-		state:         stateNew, // Initialize the state to "New"
 		pending_tasks: make(chan task),
 	}
 }
@@ -68,47 +58,40 @@ func (s *scheduler) SetWorkerCount(count int) (*scheduler, error) {
 	return s, nil
 }
 
-func (s *scheduler) AddTask(ins func() error) *scheduler {
-	// Check if AddTask() has been called before SetInterval()
-	if s.state != stateNew {
-		panic(errors.New("you can call AddTask() twice before call SetInterval for last AddTask()"))
-	}
-
+func (s *scheduler) AddTask(ins func() error) *task {
 	t := task{
 		id:          s.id(),
 		instruction: ins,
 	}
 
 	s.tasks = append(s.tasks, t)
-	// Set the index of the most recently added task
-	s.last_added_task_index = len(s.tasks) - 1
-
-	// Update the state to "TaskAdded"
-	s.state = stateTaskAdded
-	return s
+	last_index := len(s.tasks) - 1
+	return &s.tasks[last_index]
 }
 
-func (s *scheduler) SetInterval(interval time.Duration) *scheduler {
-	// Check if AddTask() has been called before SetInterval()
-	if s.state != stateTaskAdded {
-		panic(errors.New("SetInterval() should be called after AddTask()"))
-	}
-
-	if s.last_added_task_index == -1 {
-		// No task has been added yet, return without setting the interval
-		return s
-	}
-
+func (t *task) SetInterval(interval time.Duration) *task {
 	// Set the interval for the most recently added task
-	s.tasks[s.last_added_task_index].interval = interval
-	s.last_added_task_index = -1
-	s.state = stateNew
-	return s
+	t.interval = interval
+	return t
+}
+
+func (t *task) StartAt(start time.Time) *task {
+	t.start_time = start
+	return t
+}
+
+func (t *task) FinishAt(finish time.Time) *task {
+	t.finish_time = finish
+	return t
 }
 
 func (s *scheduler) CheckAndRunTask() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
+		if s.IsFinishTime(task.id) || !s.IsStartTime(task) {
+			continue
+		}
+
 		if task.last_time_performed == zeroTime || time.Now().Add(-1*task.interval).Unix() >= task.last_time_performed.Unix() {
 			s.pending_tasks <- task
 		}
@@ -117,12 +100,37 @@ func (s *scheduler) CheckAndRunTask() *scheduler {
 	return s
 }
 
+func (s *scheduler) IsStartTime(t task) bool {
+	var zeroTime time.Time
+	if zeroTime.Unix() != t.start_time.Unix() && time.Now().Unix() <= t.start_time.Unix() {
+		return false
+	}
+
+	return true
+}
+
+func (s *scheduler) IsFinishTime(id int) bool {
+	var zeroTime time.Time
+	for index, task := range s.tasks {
+		if task.id == id {
+			if zeroTime.Unix() != task.finish_time.Unix() && time.Now().Unix() >= task.finish_time.Unix() {
+				// Task has reached its finish time, remove it from the list
+				s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func (s *scheduler) FindFailureTask(id int) int {
 	for index, failed_task := range s.failed_tasks {
 		if failed_task.task_id == id {
 			return index
 		}
 	}
+
 	return -1
 }
 

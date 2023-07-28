@@ -117,15 +117,86 @@ func (suite *SchedulerTestSuite) Test_SetInterval() {
 
 	// Add a task to the scheduler
 	taskInstruction := func() error { return nil }
-	sch.AddTask(taskInstruction)
-
-	// Set an interval for the last added task
 	interval := time.Second * 5
-	sch.SetInterval(interval)
+	sch.AddTask(taskInstruction).SetInterval(interval)
 
 	// Check if the interval is set correctly for the last task
 	lastTaskIndex := len(sch.tasks) - 1
 	require.Equal(interval, sch.tasks[lastTaskIndex].interval)
+}
+
+func (suite *SchedulerTestSuite) Test_StartAt() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler
+	taskInstruction := func() error { return nil }
+	time := time.Now().Add(1 * time.Hour)
+	sch.AddTask(taskInstruction).StartAt(time)
+
+	// Check if the interval is set correctly for the last task
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(time, sch.tasks[lastTaskIndex].start_time)
+}
+
+func (suite *SchedulerTestSuite) Test_FinishAt() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler
+	taskInstruction := func() error { return nil }
+	time := time.Now().Add(2 * time.Hour)
+	sch.AddTask(taskInstruction).FinishAt(time)
+
+	// Check if the interval is set correctly for the last task
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(time, sch.tasks[lastTaskIndex].finish_time)
+}
+
+func (suite *SchedulerTestSuite) Test_IsStartTime() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler with start at 2 hours later
+	taskInstruction := func() error { return nil }
+	time1 := time.Now().Add(2 * time.Hour)
+	sch.AddTask(taskInstruction).StartAt(time1)
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(false, sch.IsStartTime(sch.tasks[lastTaskIndex]))
+
+	// Add a task to the scheduler with start at 2 hours before
+	time2 := time.Now().Add(-2 * time.Hour)
+	sch.AddTask(taskInstruction).StartAt(time2)
+	lastTaskIndex = len(sch.tasks) - 1
+	require.Equal(true, sch.IsStartTime(sch.tasks[lastTaskIndex]))
+}
+
+func (suite *SchedulerTestSuite) Test_IsFinishTime() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler with start at 2 hours later
+	taskInstruction := func() error { return nil }
+	time1 := time.Now().Add(2 * time.Hour)
+	sch.AddTask(taskInstruction).FinishAt(time1)
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(false, sch.IsFinishTime(sch.tasks[lastTaskIndex].id))
+
+	// Add a task to the scheduler with start at 2 hours before
+	time2 := time.Now().Add(-2 * time.Hour)
+	sch.AddTask(taskInstruction).FinishAt(time2)
+	lastTaskIndex = len(sch.tasks) - 1
+	removed := sch.IsFinishTime(sch.tasks[lastTaskIndex].id)
+	require.Equal(true, removed)
+	require.Len(sch.tasks, 1)
 }
 
 func (suite *SchedulerTestSuite) Test_FindFailureTask() {
