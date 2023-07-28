@@ -27,11 +27,12 @@ type failure struct {
 }
 
 type scheduler struct {
-	tasks         []task     // tasks to perform with their period
-	pending_tasks chan task  // tasks that are their time to perform
-	failed_tasks  []failure  // times of a task failed with details
-	worker_count  int        // count of worker to run pending_jobs
-	id            func() int // func for get unique and sort id for us in task
+	tasks               []task     // tasks to perform with their period
+	pending_tasks       chan task  // tasks that are their time to perform
+	failed_tasks        []failure  // times of a task failed with details
+	worker_count        int        // count of worker to run pending_jobs
+	id                  func() int // func for get unique and sort id for us in task
+	force_pending_tasks []int
 }
 
 func NewScheduler() *scheduler {
@@ -96,10 +97,53 @@ func (t *task) SetCount(count int) *task {
 	return t
 }
 
+func (t *task) GetTaskId() int {
+	return t.id
+}
+
+func (s *scheduler) StopTaskById(id int) {
+	for index, task := range s.tasks {
+		if task.id == id {
+			s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
+		}
+	}
+}
+
+func (s *scheduler) ForceStopTaskById(id int) {
+	for index, task := range s.tasks {
+		if task.id == id {
+			s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
+			s.force_pending_tasks = append(s.force_pending_tasks, id)
+		}
+	}
+}
+
+func (s *scheduler) RemoveTaskIdFromForce(id int) {
+	for index, value := range s.force_pending_tasks {
+		if value == id {
+			s.force_pending_tasks = append(s.force_pending_tasks[:index], s.force_pending_tasks[index+1:]...)
+		}
+	}
+}
+
+func (s *scheduler) ForceRemoveTaskExist(id int) bool {
+	for _, value := range s.force_pending_tasks {
+		if value == id {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *scheduler) CheckAndRunTask() *scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
 		if s.IsFinishTime(task.id) || !s.IsStartTime(task) || !s.CheckCount(task.id) {
+			continue
+		}
+
+		if s.ForceRemoveTaskExist(task.id) {
+			s.RemoveTaskIdFromForce(task.id)
 			continue
 		}
 
