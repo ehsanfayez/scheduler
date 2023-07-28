@@ -157,6 +157,21 @@ func (suite *SchedulerTestSuite) Test_FinishAt() {
 	require.Equal(time, sch.tasks[lastTaskIndex].finish_time)
 }
 
+func (suite *SchedulerTestSuite) Test_SetCount() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler
+	taskInstruction := func() error { return nil }
+	sch.AddTask(taskInstruction).SetCount(5)
+
+	// Check if the interval is set correctly for the last task
+	lastTaskIndex := len(sch.tasks) - 1
+	require.Equal(5, sch.tasks[lastTaskIndex].count)
+}
+
 func (suite *SchedulerTestSuite) Test_IsStartTime() {
 	require := suite.Require()
 
@@ -197,6 +212,33 @@ func (suite *SchedulerTestSuite) Test_IsFinishTime() {
 	removed := sch.IsFinishTime(sch.tasks[lastTaskIndex].id)
 	require.Equal(true, removed)
 	require.Len(sch.tasks, 1)
+}
+
+func (suite *SchedulerTestSuite) Test_CheckCount() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler with count 2
+	taskInstruction := func() error { return nil }
+	sch.AddTask(taskInstruction).EverySecond().SetCount(2)
+	lastTaskIndex := len(sch.tasks) - 1
+
+	// check count when count is 2
+	countState := sch.CheckCount(sch.tasks[lastTaskIndex].id)
+	require.Equal(true, countState)
+	require.Equal(1, sch.tasks[lastTaskIndex].count)
+
+	// check count when count is 1
+	countState = sch.CheckCount(sch.tasks[lastTaskIndex].id)
+	require.Equal(true, countState)
+	require.Equal(0, sch.tasks[lastTaskIndex].count)
+
+	// check count when count is 0
+	countState = sch.CheckCount(sch.tasks[lastTaskIndex].id)
+	require.Equal(false, countState)
+	require.Len(sch.tasks, 0)
 }
 
 func (suite *SchedulerTestSuite) Test_FindFailureTask() {
