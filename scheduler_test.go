@@ -397,7 +397,7 @@ func (suite *SchedulerTestSuite) Test_Start() {
 	s := NewScheduler()
 
 	// Start the scheduler and get the stopped channel
-	stopped := s.Start()
+	_, stopped := s.Start()
 
 	// Wait for 3 seconds to let the scheduler run
 	time.Sleep(3 * time.Second)
