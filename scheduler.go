@@ -26,7 +26,7 @@ type failure struct {
 	fails   []fail
 }
 
-type scheduler struct {
+type Scheduler struct {
 	tasks               []task     // tasks to perform with their period
 	pending_tasks       chan task  // tasks that are their time to perform
 	failed_tasks        []failure  // times of a task failed with details
@@ -35,8 +35,8 @@ type scheduler struct {
 	force_pending_tasks []int
 }
 
-func NewScheduler() *scheduler {
-	return &scheduler{
+func NewScheduler() *Scheduler {
+	return &Scheduler{
 		id:            generateId(),
 		worker_count:  3,
 		pending_tasks: make(chan task),
@@ -51,7 +51,7 @@ func generateId() func() int {
 	}
 }
 
-func (s *scheduler) SetWorkerCount(count int) (*scheduler, error) {
+func (s *Scheduler) SetWorkerCount(count int) (*Scheduler, error) {
 	if count < 1 {
 		return s, errors.New("count should be more than 0")
 	}
@@ -60,7 +60,7 @@ func (s *scheduler) SetWorkerCount(count int) (*scheduler, error) {
 	return s, nil
 }
 
-func (s *scheduler) AddTask(ins func() error) *task {
+func (s *Scheduler) AddTask(ins func() error) *task {
 	t := task{
 		id:          s.id(),
 		instruction: ins,
@@ -101,7 +101,7 @@ func (t *task) GetTaskId() int {
 	return t.id
 }
 
-func (s *scheduler) StopTaskById(id int) {
+func (s *Scheduler) StopTaskById(id int) {
 	for index, task := range s.tasks {
 		if task.id == id {
 			s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
@@ -109,7 +109,7 @@ func (s *scheduler) StopTaskById(id int) {
 	}
 }
 
-func (s *scheduler) ForceStopTaskById(id int) {
+func (s *Scheduler) ForceStopTaskById(id int) {
 	for index, task := range s.tasks {
 		if task.id == id {
 			s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
@@ -118,7 +118,7 @@ func (s *scheduler) ForceStopTaskById(id int) {
 	}
 }
 
-func (s *scheduler) RemoveTaskIdFromForce(id int) {
+func (s *Scheduler) RemoveTaskIdFromForce(id int) {
 	for index, value := range s.force_pending_tasks {
 		if value == id {
 			s.force_pending_tasks = append(s.force_pending_tasks[:index], s.force_pending_tasks[index+1:]...)
@@ -126,7 +126,7 @@ func (s *scheduler) RemoveTaskIdFromForce(id int) {
 	}
 }
 
-func (s *scheduler) ForceRemoveTaskExist(id int) bool {
+func (s *Scheduler) ForceRemoveTaskExist(id int) bool {
 	for _, value := range s.force_pending_tasks {
 		if value == id {
 			return true
@@ -135,7 +135,7 @@ func (s *scheduler) ForceRemoveTaskExist(id int) bool {
 	return false
 }
 
-func (s *scheduler) CheckAndRunTask() *scheduler {
+func (s *Scheduler) CheckAndRunTask() *Scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
 		if s.IsFinishTime(task.id) || !s.IsStartTime(task) || !s.CheckCount(task.id) {
@@ -155,7 +155,7 @@ func (s *scheduler) CheckAndRunTask() *scheduler {
 	return s
 }
 
-func (s *scheduler) IsStartTime(t task) bool {
+func (s *Scheduler) IsStartTime(t task) bool {
 	var zeroTime time.Time
 	if zeroTime.Unix() != t.start_time.Unix() && time.Now().Unix() <= t.start_time.Unix() {
 		return false
@@ -164,7 +164,7 @@ func (s *scheduler) IsStartTime(t task) bool {
 	return true
 }
 
-func (s *scheduler) IsFinishTime(id int) bool {
+func (s *Scheduler) IsFinishTime(id int) bool {
 	var zeroTime time.Time
 	for index, task := range s.tasks {
 		if task.id == id {
@@ -179,7 +179,7 @@ func (s *scheduler) IsFinishTime(id int) bool {
 	return false
 }
 
-func (s *scheduler) CheckCount(id int) bool {
+func (s *Scheduler) CheckCount(id int) bool {
 	for index, task := range s.tasks {
 		if task.id == id {
 			if task.count == 0 {
@@ -196,7 +196,7 @@ func (s *scheduler) CheckCount(id int) bool {
 	return true
 }
 
-func (s *scheduler) FindFailureTask(id int) int {
+func (s *Scheduler) FindFailureTask(id int) int {
 	for index, failed_task := range s.failed_tasks {
 		if failed_task.task_id == id {
 			return index
@@ -206,7 +206,7 @@ func (s *scheduler) FindFailureTask(id int) int {
 	return -1
 }
 
-func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
+func (s *Scheduler) AddFailureTask(id int, err string) *Scheduler {
 	index := s.FindFailureTask(id)
 	if index >= 0 {
 		new_failure := fail{
@@ -232,7 +232,7 @@ func (s *scheduler) AddFailureTask(id int, err string) *scheduler {
 }
 
 // Define the worker function that processes tasks
-func (s *scheduler) worker(taskQueue <-chan task, workerID int) {
+func (s *Scheduler) worker(taskQueue <-chan task, workerID int) {
 	for task := range taskQueue {
 		err := task.instruction() // Execute the task
 		if err != nil {
@@ -248,7 +248,7 @@ func (s *scheduler) worker(taskQueue <-chan task, workerID int) {
 	}
 }
 
-func (s *scheduler) Start() chan bool {
+func (s *Scheduler) Start() chan bool {
 	stopped := make(chan bool, 1)
 
 	// Create worker pool
