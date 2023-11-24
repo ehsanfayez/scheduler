@@ -248,7 +248,7 @@ func (s *Scheduler) worker(taskQueue <-chan task, workerID int) {
 	}
 }
 
-func (s *Scheduler) Start() chan bool {
+func (s *Scheduler) Start() (*Scheduler, chan bool) {
 	stopped := make(chan bool, 1)
 
 	// Create worker pool
@@ -272,5 +272,5 @@ func (s *Scheduler) Start() chan bool {
 		}
 	}()
 
-	return stopped
+	return s, stopped
 }
