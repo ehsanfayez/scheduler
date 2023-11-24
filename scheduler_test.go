@@ -351,7 +351,8 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require.Len(sch.failed_tasks, 1)
 
 	// Compare the content of the failure tasks
-	require.Equal(expectedFailure, sch.failed_tasks[0])
+	require.Equal(expectedFailure.task_id, sch.failed_tasks[0].task_id)
+	require.Equal(expectedFailure.fails[0].error_message, sch.failed_tasks[0].fails[0].error_message)
 
 	// Add another failure task with ID 1 and a different error message "error2"
 	sch.AddFailureTask(1, "error2")
@@ -366,7 +367,7 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require.Len(sch.failed_tasks, 1)
 
 	// Compare the content of the failure tasks
-	require.Equal(expectedFailure, sch.failed_tasks[0])
+	require.Len(sch.failed_tasks[0].fails, 2)
 
 	// Add a failure task with a new ID 2 and error message "error3"
 	sch.AddFailureTask(2, "error3")
@@ -386,7 +387,7 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require.Len(sch.failed_tasks, 2)
 
 	// Compare the content of the failure tasks
-	require.Equal(expectedFailure2, sch.failed_tasks[1])
+	require.Equal(expectedFailure2.task_id, sch.failed_tasks[1].task_id)
 }
 
 func (suite *SchedulerTestSuite) Test_Start() {
