@@ -63,7 +63,7 @@ func (s *Scheduler) SetWorkerCount(count int) (*Scheduler, error) {
 func (s *Scheduler) AddTask(ins func() error) *task {
 	t := task{
 		id:          s.id(),
-		instruction: ins,
+		instruction: func() error { return ins() },
 		count:       -1,
 	}
 
@@ -248,7 +248,7 @@ func (s *Scheduler) worker(taskQueue <-chan task, workerID int) {
 	}
 }
 
-func (s *Scheduler) Start() (*Scheduler, chan bool) {
+func (s *Scheduler) Start() chan bool {
 	stopped := make(chan bool, 1)
 
 	// Create worker pool
@@ -272,5 +272,5 @@ func (s *Scheduler) Start() (*Scheduler, chan bool) {
 		}
 	}()
 
-	return s, stopped
+	return stopped
 }
