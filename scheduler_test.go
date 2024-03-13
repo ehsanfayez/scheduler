@@ -390,6 +390,29 @@ func (suite *SchedulerTestSuite) Test_AddFailureTask() {
 	require.Equal(expectedFailure2.task_id, sch.failed_tasks[1].task_id)
 }
 
+func (suite *SchedulerTestSuite) TestRunTaskWithoutOverLapping() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+	sch.SetWorkerCount(1)
+
+	// Add a task to the scheduler
+	taskInstruction := func() error { time.Sleep(4 * time.Second); return nil }
+	sch.AddTask(taskInstruction).WithoutOverLapping().EverySecond()
+	require.Len(sch.tasks, 1)
+
+	// Check pending tasks before run
+	require.Len(sch.pending_tasks, 0)
+
+	// wait 3 second
+	time.Sleep(3 * time.Second)
+	require.Len(sch.pending_tasks, 0)
+
+	// Check if the task is removed from the pending_tasks slice
+	require.Len(sch.pending_tasks, 0)
+}
+
 func (suite *SchedulerTestSuite) Test_Start() {
 	require := suite.Require()
 
