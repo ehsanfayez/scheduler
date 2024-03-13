@@ -6,13 +6,14 @@ import (
 )
 
 type task struct {
-	id                  int
-	instruction         func() error
-	interval            time.Duration
-	start_time          time.Time
-	finish_time         time.Time
-	last_time_performed time.Time
-	count               int
+	id                   int
+	instruction          func() error
+	interval             time.Duration
+	start_time           time.Time
+	finish_time          time.Time
+	last_time_performed  time.Time
+	without_over_lapping bool
+	count                int
 }
 
 type fail struct {
@@ -29,6 +30,7 @@ type failure struct {
 type Scheduler struct {
 	tasks               []task     // tasks to perform with their period
 	pending_tasks       chan task  // tasks that are their time to perform
+	running_tasks_id    []int      // tasks that are running
 	failed_tasks        []failure  // times of a task failed with details
 	worker_count        int        // count of worker to run pending_jobs
 	id                  func() int // func for get unique and sort id for us in task
@@ -62,9 +64,10 @@ func (s *Scheduler) SetWorkerCount(count int) (*Scheduler, error) {
 
 func (s *Scheduler) AddTask(ins func() error) *task {
 	t := task{
-		id:          s.id(),
-		instruction: func() error { return ins() },
-		count:       -1,
+		id:                   s.id(),
+		instruction:          func() error { return ins() },
+		count:                -1,
+		without_over_lapping: false,
 	}
 
 	s.tasks = append(s.tasks, t)
@@ -94,6 +97,11 @@ func (t *task) SetCount(count int) *task {
 	}
 
 	t.count = count
+	return t
+}
+
+func (t *task) WithoutOverLapping() *task {
+	t.without_over_lapping = true
 	return t
 }
 
@@ -132,13 +140,14 @@ func (s *Scheduler) ForceRemoveTaskExist(id int) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
 func (s *Scheduler) CheckAndRunTask() *Scheduler {
 	for _, task := range s.tasks {
 		var zeroTime time.Time
-		if s.IsFinishTime(task.id) || !s.IsStartTime(task) || !s.CheckCount(task.id) {
+		if s.IsFinishTime(task.id) || !s.IsStartTime(task) || !s.CheckCount(task.id) || s.IsRunning(task) {
 			continue
 		}
 
@@ -171,6 +180,19 @@ func (s *Scheduler) IsFinishTime(id int) bool {
 			if zeroTime.Unix() != task.finish_time.Unix() && time.Now().Unix() >= task.finish_time.Unix() {
 				// Task has reached its finish time, remove it from the list
 				s.tasks = append(s.tasks[:index], s.tasks[index+1:]...)
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (s *Scheduler) IsRunning(t task) bool {
+	if t.without_over_lapping {
+		// if task id is in running_tasks_id, return true
+		for _, id := range s.running_tasks_id {
+			if id == t.id {
 				return true
 			}
 		}
@@ -234,7 +256,9 @@ func (s *Scheduler) AddFailureTask(id int, err string) *Scheduler {
 // Define the worker function that processes tasks
 func (s *Scheduler) worker(taskQueue <-chan task, workerID int) {
 	for task := range taskQueue {
+		s.running_tasks_id = append(s.running_tasks_id, task.id)
 		err := task.instruction() // Execute the task
+		s.running_tasks_id = deleteFromArray(s.running_tasks_id, task.id)
 		if err != nil {
 			s.AddFailureTask(task.id, err.Error())
 		} else {
@@ -246,6 +270,27 @@ func (s *Scheduler) worker(taskQueue <-chan task, workerID int) {
 			}
 		}
 	}
+}
+
+func deleteFromArray(array []int, value int) []int {
+	// Find index of value to delete
+	index := -1
+	for i, v := range array {
+		if v == value {
+			index = i
+			break
+		}
+	}
+
+	// If value is not found, return original array
+	if index == -1 {
+		return array
+	}
+
+	// Remove value from array
+	newArray := append(array[:index], array[index+1:]...)
+
+	return newArray
 }
 
 func (s *Scheduler) Start() chan bool {
