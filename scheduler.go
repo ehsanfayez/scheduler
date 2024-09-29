@@ -126,6 +126,16 @@ func (s *Scheduler) ForceStopTaskById(id int) {
 	}
 }
 
+// force run a existing task
+func (s *Scheduler) ForceRunTask(id int) {
+	for _, task := range s.tasks {
+		if task.id == id {
+			s.pending_tasks <- task
+			break
+		}
+	}
+}
+
 func (s *Scheduler) RemoveTaskIdFromForce(id int) {
 	for index, value := range s.force_pending_tasks {
 		if value == id {
@@ -189,12 +199,9 @@ func (s *Scheduler) IsFinishTime(id int) bool {
 }
 
 func (s *Scheduler) IsRunning(t task) bool {
-	if t.without_over_lapping {
-		// if task id is in running_tasks_id, return true
-		for _, id := range s.running_tasks_id {
-			if id == t.id {
-				return true
-			}
+	for _, id := range s.running_tasks_id {
+		if id == t.id || t.without_over_lapping {
+			return true
 		}
 	}
 
