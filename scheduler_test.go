@@ -435,6 +435,40 @@ func (suite *SchedulerTestSuite) Test_Start() {
 	require.Empty(s.pending_tasks)
 }
 
+func (suite *SchedulerTestSuite) TestForceRunTask() {
+	require := suite.Require()
+
+	// Create a new scheduler instance using NewScheduler
+	sch := NewScheduler()
+
+	// Add a task to the scheduler
+	taskExecuted := false
+	taskInstruction := func() error {
+		taskExecuted = true
+		return nil
+	}
+	task := sch.AddTask(taskInstruction).EverySeconds(10)
+	require.Len(sch.tasks, 1)
+
+	// Start the scheduler
+	stopChan := sch.Start()
+	defer func() { stopChan <- true }()
+
+	// Force run the task
+	sch.ForceRunTask(task.id)
+
+	// Wait a short time to allow the task to be executed
+	time.Sleep(100 * time.Millisecond)
+
+	// Check if the task was executed
+	require.True(taskExecuted, "Task should have been executed")
+
+	// Check that the task is still in the tasks slice
+	require.Len(sch.tasks, 1)
+}
+
 func TestSchedulerTestSuite(t *testing.T) {
 	suite.Run(t, new(SchedulerTestSuite))
 }
+
+// test force run task
