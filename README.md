@@ -154,6 +154,71 @@ func main() {
 	stopChan <- true
 }
 ```
+
+## Time Intervals
+```go
+	// Create a new Scheduler
+	s := scheduler.NewScheduler()
+
+	S.AddTask(func() error {
+		fmt.Println("Task 1 executed")
+	}).EverySecond())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 2 executed")
+	}).EverySeconds(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 3 executed")
+	}).EveryMinute())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 4 executed")
+	}).EveryMinutes(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 5 executed")
+	}).EveryHour())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 6 executed")
+	}).EveryHours(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 7 executed")
+	}).EveryDay())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 8 executed")
+	}).EveryDays(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 9 executed")
+	}).EveryWeek())	
+
+	S.AddTask(func() error {
+		fmt.Println("Task 10 executed")
+	}).EveryWeeks(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 11 executed")
+	}).EveryMonth())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 12 executed")
+	}).EveryMonths(5))
+
+	S.AddTask(func() error {
+		fmt.Println("Task 13 executed")
+	}).EveryYear())
+
+	S.AddTask(func() error {
+		fmt.Println("Task 14 executed")
+	}).EveryYears(5))
+
+	S.Start()
+
+```
 ### Notes
 Thread Safety: Ensure that your task functions are thread-safe if they access shared resources.
 Execution Timing: The Scheduler checks for tasks to run every second. Tasks may not execute at the exact specified time but will run as close as possible.
