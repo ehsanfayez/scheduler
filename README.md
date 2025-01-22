@@ -12,10 +12,9 @@ Installation
 To use the Scheduler package, simply import it into your Go project:
 
 ```go
-import "path/to/your/package/scheduler"
+import "github.com/ehsanfayez/scheduler"
 
 ```
-Replace "path/to/your/package/scheduler" with the actual import path where the Scheduler package resides.
 
 ### Usage
 Creating a Scheduler
